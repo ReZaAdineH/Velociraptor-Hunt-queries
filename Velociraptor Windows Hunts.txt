@@ -1,0 +1,96 @@
+Velociraptor hunt in Windows
+
+1. Find Processes with Network Connections:
+
+SELECT process.name, process.pid, process.args, network.connections
+FROM process
+WHERE network.connections
+
+
+This query will return a list of processes that have active network connections.
+
+
+2. Find Suspicious Registry Modifications:
+
+SELECT registry.key, registry.value, registry.old_value, registry.modified_time
+FROM registry
+WHERE registry.old_value != registry.value AND registry.key LIKE "%Run%"
+
+
+This query will return a list of registry key modifications that could potentially indicate malicious activity, specifically modifications to keys that start with "Run".
+
+3. Find Suspicious File Modifications:
+
+SELECT file.path, file.modified_time, file.hash.md5
+FROM file
+WHERE file.modified_time >= DATE_SUB(NOW(), INTERVAL 1 DAY) AND file.hash.md5 != ""
+
+
+This query will return a list of files that have been modified in the last 24 hours and have a valid MD5 hash. This can be useful for identifying recently modified files that may have been tampered with.
+
+
+4. Find Unusual User Logins:
+
+SELECT auth.username, auth.logon_time, auth.ip
+FROM auth
+WHERE auth.logon_time >= DATE_SUB(NOW(), INTERVAL 1 DAY) AND auth.ip NOT LIKE "192.168.%"
+
+
+
+This query will return a list of user logins in the last 24 hours from IP addresses that are not in the 192.168.x.x range. This can be useful for identifying logins from potentially malicious external sources.
+
+5. Find Suspicious PowerShell Commands:
+
+SELECT powershell.command_line, process.name, process.pid, process.args
+FROM powershell
+JOIN process ON powershell.pid = process.pid
+WHERE powershell.command_line LIKE "%downloadstring%" OR powershell.command_line LIKE "%invoke-expression%"
+
+This query will return a list of PowerShell commands that contain the "DownloadString" or "Invoke-Expression" cmdlets, which are commonly used in malicious PowerShell scripts.
+
+6. Find Unusual Network Activity:
+
+SELECT network.destination_ip, network.destination_port, network.protocol, COUNT(*) AS count
+FROM network
+WHERE network.destination_ip NOT LIKE "192.168.%"
+GROUP BY network.destination_ip, network.destination_port, network.protocol
+HAVING count > 100
+
+
+This query will return a list of network connections to IP addresses that are not in the 192.168.x.x range and have a count of over 100. This can be useful for identifying potential network scans or other suspicious activity.
+
+7. Find Suspicious Scheduled Tasks:
+
+SELECT scheduled_task.task_path, scheduled_task.last_run_time, scheduled_task.next_run_time
+FROM scheduled_task
+WHERE scheduled_task.task_path LIKE "%Microsoft\\Windows%"
+
+This query will return a list of scheduled tasks that are located in the "Microsoft\Windows" folder, which is a common location for malicious scheduled tasks.
+
+8. Find Suspicious Driver Installations:
+
+SELECT driver.name, driver.path, driver.service_name, driver.description, driver.signed
+FROM driver
+WHERE driver.signed = 0 AND driver.path NOT LIKE "%System32%"
+
+This query will return a list of drivers that are not signed and are located outside of the System32 folder, which can be a potential indicator of malicious driver installations.
+
+9. Find Suspicious Processes with High CPU Usage:
+
+SELECT process.name, process.pid, process.cpu_percent, process.args
+FROM process
+WHERE process.cpu_percent > 50 AND process.name NOT IN ("System", "Idle")
+
+This query will return a list of processes that are using more than 50% of the CPU and are not the System or Idle processes, which can be an indicator of malicious processes or malware.
+
+10. Find Suspicious User Account Activity:
+
+SELECT auth.username, auth.logon_type, auth.logon_time, auth.ip, auth.target_name
+FROM auth
+WHERE auth.logon_type IN (2, 3, 10) AND auth.target_name NOT IN ("$", "localhost") AND auth.logon_time >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+
+This query will return a list of user account logins with logon types 2, 3, or 10 (which can indicate network logons or remote logons) to targets that are not the local computer or the domain controller, and occurred in the last 24 hours. This can be useful for identifying potential unauthorized access attempts.
+
+
+
+
